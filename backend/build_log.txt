@@ -1,0 +1,64 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< com.alumniconnect:alumni-connect >------------------
+[INFO] Building Alumni Connect 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.3.2:clean (default-clean) @ alumni-connect ---
+[INFO] Deleting C:\Users\pranj\Downloads\p5\Campus Connect\backend\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ alumni-connect ---
+[INFO] Copying 3 resources from src\main\resources to target\classes
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ alumni-connect ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 70 source files with javac [debug release 17] to target\classes
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by lombok.permit.Permit
+WARNING: Please consider reporting this to the maintainers of class lombok.permit.Permit
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/pranj/Downloads/p5/Campus Connect/backend/src/main/java/com/alumniconnect/service/EventService.java:[54,42] cannot find symbol
+  symbol:   variable FACULTY
+  location: class com.alumniconnect.entity.Role
+[ERROR] /C:/Users/pranj/Downloads/p5/Campus Connect/backend/src/main/java/com/alumniconnect/service/ResumeService.java:[40,58] cannot find symbol
+  symbol:   variable FACULTY
+  location: class com.alumniconnect.entity.Role
+[ERROR] /C:/Users/pranj/Downloads/p5/Campus Connect/backend/src/main/java/com/alumniconnect/service/ResumeService.java:[87,58] cannot find symbol
+  symbol:   variable FACULTY
+  location: class com.alumniconnect.entity.Role
+[ERROR] /C:/Users/pranj/Downloads/p5/Campus Connect/backend/src/main/java/com/alumniconnect/service/JobService.java:[47,82] cannot find symbol
+  symbol:   variable FACULTY
+  location: class com.alumniconnect.entity.Role
+[INFO] 4 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  6.932 s
+[INFO] Finished at: 2026-02-13T19:49:13+05:30
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project alumni-connect: Compilation failure: Compilation failure: 
+[ERROR] /C:/Users/pranj/Downloads/p5/Campus Connect/backend/src/main/java/com/alumniconnect/service/EventService.java:[54,42] cannot find symbol
+[ERROR]   symbol:   variable FACULTY
+[ERROR]   location: class com.alumniconnect.entity.Role
+[ERROR] /C:/Users/pranj/Downloads/p5/Campus Connect/backend/src/main/java/com/alumniconnect/service/ResumeService.java:[40,58] cannot find symbol
+[ERROR]   symbol:   variable FACULTY
+[ERROR]   location: class com.alumniconnect.entity.Role
+[ERROR] /C:/Users/pranj/Downloads/p5/Campus Connect/backend/src/main/java/com/alumniconnect/service/ResumeService.java:[87,58] cannot find symbol
+[ERROR]   symbol:   variable FACULTY
+[ERROR]   location: class com.alumniconnect.entity.Role
+[ERROR] /C:/Users/pranj/Downloads/p5/Campus Connect/backend/src/main/java/com/alumniconnect/service/JobService.java:[47,82] cannot find symbol
+[ERROR]   symbol:   variable FACULTY
+[ERROR]   location: class com.alumniconnect.entity.Role
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
