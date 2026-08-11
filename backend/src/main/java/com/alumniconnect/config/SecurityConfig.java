@@ -42,7 +42,8 @@ public class SecurityConfig {
                                                                 "/api/chatbot/**",
                                                                 "/v3/api-docs/**",
                                                                 "/swagger-ui/**",
-                                                                "/ws/**")
+                                                                "/ws/**",
+                                                                "/actuator/health")
                                                 .permitAll()
 
                                                 // All other endpoints require authentication
@@ -69,6 +70,7 @@ public class SecurityConfig {
                 CorsConfiguration configuration = new CorsConfiguration();
                 // Allow specific origins for development and production
                 configuration.setAllowedOrigins(List.of(
+                                "http://localhost:3001",
                                 "http://localhost:5000",
                                 "http://localhost:5173",
                                 "http://127.0.0.1:5000"));

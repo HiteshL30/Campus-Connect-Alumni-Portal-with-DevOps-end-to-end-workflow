@@ -15,6 +15,20 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
     List<Job> findByPostedByIdOrderByCreatedAtDesc(Long userId);
 
+    long countByPostedBy(com.alumniconnect.entity.User user);
+
+    @Query(value = "SELECT COUNT(*) FROM job_saved WHERE user_id = :userId", nativeQuery = true)
+    int countSavedJobsByUser(@Param("userId") Long userId);
+    
+    @Query(value = "SELECT COUNT(*) FROM job_applications WHERE user_id = :userId", nativeQuery = true)
+    int countAppliedJobsByUser(@Param("userId") Long userId);
+    
+    @Query(value = "SELECT COUNT(*) FROM jobs WHERE posted_by = :userId", nativeQuery = true)
+    int countByPostedByIdNative(@Param("userId") Long userId);
+    
+    @Query(value = "SELECT COUNT(*) FROM job_applications ja JOIN jobs j ON ja.job_id = j.id WHERE j.posted_by = :userId", nativeQuery = true)
+    int countTotalApplicantsForUserJobs(@Param("userId") Long userId);
+
     @Modifying
     @Query("UPDATE Job j SET j.isActive = false WHERE j.isActive = true AND j.expiryDate IS NOT NULL AND j.expiryDate < :now")
     int expireOldJobs(@Param("now") LocalDateTime now);

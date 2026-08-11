@@ -20,4 +20,9 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     // Mark all as read feature support
     List<Notification> findByRecipientAndIsReadFalse(User recipient);
+    
+    // Safe ID based queries
+    List<Notification> findByRecipientIdAndIsReadFalse(Long recipientId);
+    
+    int countByRecipientIdAndIsReadFalse(Long recipientId);
 }

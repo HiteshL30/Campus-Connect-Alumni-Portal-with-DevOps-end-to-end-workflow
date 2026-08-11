@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, animate } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { adminAPI, jobAPI, eventAPI, alumniAPI, connectionAPI } from '../services/api';
 import Card from '../components/ui/Card';
@@ -7,6 +7,8 @@ import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import AnimatedPage from '../components/ui/AnimatedPage';
 import Skeleton from '../components/ui/Skeleton';
+import AnimatedCounter from '../components/ui/AnimatedCounter';
+import ScrollReveal, { ScrollRevealList, ScrollRevealItem } from '../components/ui/ScrollReveal';
 import {
   Briefcase,
   Calendar,
@@ -22,19 +24,7 @@ import {
 import { Link } from 'react-router-dom';
 import RecommendedJobs from '../components/jobs/RecommendedJobs';
 
-const CountUp = ({ to, duration = 1.5 }) => {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    const controls = animate(0, to, {
-      duration,
-      onUpdate: (value) => setCount(Math.floor(value)),
-    });
-    return () => controls.stop();
-  }, [to, duration]);
-
-  return <span>{count.toLocaleString()}</span>;
-};
+// CountUp removed — using AnimatedCounter component instead
 
 export default function Dashboard() {
   const { user, isAdmin } = useAuth();
@@ -187,40 +177,21 @@ export default function Dashboard() {
       </header>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard
-          icon={Briefcase}
-          label="Active Jobs"
-          value={stats.jobs}
-          color="blue"
-          trend="+12% locally"
-          to="/jobs"
-        />
-        <StatsCard
-          icon={Calendar}
-          label="Upcoming Events"
-          value={stats.events}
-          color="purple"
-          trend="3 happening today"
-          to="/events"
-        />
-        <StatsCard
-          icon={Users}
-          label="Global Alumni"
-          value={stats.alumni}
-          color="emerald"
-          trend="New members joined"
-          to="/alumni"
-        />
-        <StatsCard
-          icon={isAdmin ? ShieldCheck : Zap}
-          label={isAdmin ? "Pending Approvals" : "Active Connections"}
-          value={isAdmin ? stats.pendingApprovals : stats.connections}
-          color={isAdmin ? "rose" : "amber"}
-          trend={isAdmin ? "Requires attention" : "Last seen 2h ago"}
-          to={isAdmin ? "/admin" : "/connections"}
-        />
-      </div>
+      <ScrollRevealList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" staggerDelay={0.1}>
+        <ScrollRevealItem><StatsCard icon={Briefcase} label="Active Jobs" value={stats.jobs} color="blue" trend="+12% locally" to="/jobs" /></ScrollRevealItem>
+        <ScrollRevealItem><StatsCard icon={Calendar} label="Upcoming Events" value={stats.events} color="purple" trend="3 happening today" to="/events" /></ScrollRevealItem>
+        <ScrollRevealItem><StatsCard icon={Users} label="Global Alumni" value={stats.alumni} color="emerald" trend="New members joined" to="/alumni" /></ScrollRevealItem>
+        <ScrollRevealItem>
+          <StatsCard
+            icon={isAdmin ? ShieldCheck : Zap}
+            label={isAdmin ? 'Pending Approvals' : 'Active Connections'}
+            value={isAdmin ? stats.pendingApprovals : stats.connections}
+            color={isAdmin ? 'rose' : 'amber'}
+            trend={isAdmin ? 'Requires attention' : 'Last seen 2h ago'}
+            to={isAdmin ? '/admin' : '/connections'}
+          />
+        </ScrollRevealItem>
+      </ScrollRevealList>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* Left Col - Jobs & Activity */}
@@ -336,7 +307,7 @@ const StatsCard = ({ icon: Icon, label, value, color, trend, to }) => {
             <p className="text-xs font-black text-secondary-400 uppercase tracking-widest mb-1">{label}</p>
             <div className="flex items-baseline gap-2">
               <h4 className="text-3xl font-black text-secondary-900 tracking-tighter">
-                <CountUp to={value} />
+                <AnimatedCounter to={value} duration={1.6} />
               </h4>
               <span className="text-[10px] font-bold text-secondary-400 px-2 py-0.5 bg-secondary-50 rounded-full">{trend}</span>
             </div>
@@ -382,6 +353,8 @@ const JobRow = ({ job, delay, currentUserId, onDelete }) => (
 
 const EventMiniCard = ({ event, delay, currentUserId, onDelete }) => {
   const date = new Date(event.eventDate);
+  const isValidDate = !isNaN(date.getTime());
+  
   return (
     <Link to={`/events/${event.id}`} className="block group">
       <Card
@@ -391,8 +364,12 @@ const EventMiniCard = ({ event, delay, currentUserId, onDelete }) => {
         hover={true}
       >
         <div className="w-12 h-14 bg-primary-50 rounded-xl flex flex-col items-center justify-center text-primary-600 shrink-0">
-          <span className="text-[10px] font-black uppercase tracking-tight">{date.toLocaleDateString('en-US', { month: 'short' })}</span>
-          <span className="text-lg font-black leading-none">{date.getDate()}</span>
+          <span className="text-[10px] font-black uppercase tracking-tight">
+            {isValidDate ? date.toLocaleDateString('en-US', { month: 'short' }) : 'TBA'}
+          </span>
+          <span className="text-lg font-black leading-none">
+            {isValidDate ? date.getDate() : '-'}
+          </span>
         </div>
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-black text-secondary-900 truncate group-hover:text-primary-600 transition-colors">{event.title}</h4>

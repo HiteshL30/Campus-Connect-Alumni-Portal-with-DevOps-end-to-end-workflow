@@ -43,6 +43,13 @@ public class NotificationService {
                 .map(this::toDTO);
     }
 
+    public java.util.List<NotificationDTO> getUnreadNotifications(User user) {
+        return notificationRepository.findByRecipientAndIsReadFalse(user)
+                .stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
     public long getUnreadCount(User user) {
         return notificationRepository.countByRecipientAndIsReadFalse(user);
     }

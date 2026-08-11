@@ -1,0 +1,36 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  COMPOSE_FILE: docker-compose.prod.yml
+
+build-images:
+  stage: build
+  image: docker:27.0.3
+  services:
+    - docker:27.0.3-dind
+  script:
+    - docker build -t campus-connect-frontend ./frontend
+    - docker build -t campus-connect-backend ./backend
+    - docker build -t campus-connect-database ./database
+  only:
+    - main
+
+deploy-utho:
+  stage: deploy
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache openssh-client bash tar
+    - mkdir -p ~/.ssh
+    - echo "$UTHO_SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H "$UTHO_HOST" >> ~/.ssh/known_hosts
+  script:
+    - tar --exclude=.git --exclude=frontend/node_modules --exclude=frontend/dist --exclude=backend/target -czf deploy.tar.gz .
+    - scp deploy.tar.gz "$UTHO_USER@$UTHO_HOST:/tmp/deploy.tar.gz"
+    - ssh "$UTHO_USER@$UTHO_HOST" "mkdir -p $UTHO_APP_PATH && tar -xzf /tmp/deploy.tar.gz -C $UTHO_APP_PATH && cd $UTHO_APP_PATH && docker compose -f docker-compose.prod.yml --env-file .env up -d --build"
+  only:
+    - main

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { userAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import Card from '../components/ui/Card';
@@ -6,6 +6,7 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Badge from '../components/ui/Badge';
 import AnimatedPage from '../components/ui/AnimatedPage';
+import ScrollReveal from '../components/ui/ScrollReveal';
 import {
   User,
   Mail,
@@ -36,10 +37,24 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [activeTab, setActiveTab] = useState('portfolio');
+  const coverRef = useRef(null);
 
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  // Parallax cover on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (coverRef.current) {
+        const scrollY = window.scrollY;
+        coverRef.current.style.transform = `translateY(${scrollY * 0.3}px)`;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);;
 
   const fetchProfile = async () => {
     try {
@@ -83,30 +98,46 @@ export default function Profile() {
 
   return (
     <AnimatedPage className="space-y-10 max-w-7xl mx-auto pb-20">
-      {/* Profile Header */}
+      {/* Profile Header with parallax */}
       <section className="relative h-64 md:h-80 bg-secondary-900 rounded-[48px] overflow-hidden shadow-premium group">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-600/30 via-secondary-900/60 to-black/90 z-10" />
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-primary-500 blur-[150px] rounded-full animate-float" />
+        <div ref={coverRef} className="absolute inset-0 will-change-transform">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-600/30 via-secondary-900/60 to-black/90 z-10" />
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-primary-500 blur-[150px] rounded-full animate-float" />
+            <div className="absolute bottom-[-10%] right-[10%] w-[40%] h-[40%] bg-violet-600 blur-[100px] rounded-full animate-float-slow" />
+          </div>
         </div>
 
         <div className="absolute inset-0 z-20 flex flex-col md:flex-row items-center md:items-end p-8 md:p-12 lg:p-16 gap-8">
           <div className="relative group/avatar">
-            <div className="w-32 h-32 md:w-40 md:h-40 bg-white rounded-[40px] p-2 shadow-2xl overflow-hidden ring-4 ring-white/10 group-hover/avatar:scale-105 transition-all duration-500">
-              <div className="w-full h-full bg-secondary-900 rounded-[32px] flex items-center justify-center text-white font-black text-4xl group-hover/avatar:bg-primary-600 transition-colors">
+            <motion.div
+              whileHover={{ scale: 1.06, rotate: 2 }}
+              transition={{ type: 'spring', stiffness: 250, damping: 15 }}
+              className="w-32 h-32 md:w-40 md:h-40 bg-white rounded-[40px] p-2 shadow-2xl overflow-hidden ring-4 ring-white/10"
+            >
+              <div className="w-full h-full bg-gradient-to-br from-secondary-800 to-secondary-900 rounded-[32px] flex items-center justify-center text-white font-black text-4xl">
                 {profile?.firstName?.[0]}{profile?.lastName?.[0]}
               </div>
-            </div>
-            <button className="absolute bottom-2 right-2 p-3 bg-primary-600 text-white rounded-2xl shadow-lg hover:scale-110 transition-transform active:scale-95 z-30 ring-4 ring-white">
+            </motion.div>
+            <motion.button
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
+              className="absolute bottom-2 right-2 p-3 bg-primary-600 text-white rounded-2xl shadow-lg z-30 ring-4 ring-white"
+            >
               <Camera size={20} />
-            </button>
+            </motion.button>
           </div>
 
           <div className="text-center md:text-left space-y-3 pb-2 flex-1">
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-              <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter">
+              <motion.h1
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="text-4xl md:text-5xl font-black text-white tracking-tighter"
+              >
                 {profile?.firstName} {profile?.lastName}
-              </h1>
+              </motion.h1>
               <div className="flex gap-2">
                 <Badge className={`${profile?.verified ? 'bg-emerald-500' : 'bg-amber-500'} text-white border-none px-4 py-1.5 rounded-full flex items-center gap-1.5 font-black text-[10px] tracking-widest shadow-lg`}>
                   {profile?.verified ? <ShieldCheck size={14} /> : <Activity size={14} />}
@@ -127,10 +158,10 @@ export default function Profile() {
           <div className="pb-2">
             <Button
               onClick={() => setEditMode(!editMode)}
-              variant={editMode ? "ghost" : "outline"}
+              variant={editMode ? 'ghost' : 'outline'}
               className={`${editMode ? 'text-white hover:bg-white/10' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'} h-12 px-6 rounded-2xl backdrop-blur-md`}
             >
-              {editMode ? "Cancel Editing" : "Manage Profile"}
+              {editMode ? 'Cancel Editing' : 'Manage Profile'}
             </Button>
           </div>
         </div>
@@ -139,82 +170,122 @@ export default function Profile() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Left Sidebar */}
         <aside className="lg:col-span-4 space-y-8">
-          <Card className="p-8 space-y-8 border-none shadow-soft rounded-[40px]" hover={false}>
-            <h3 className="text-xl font-black text-secondary-900 tracking-tight flex items-center gap-3">
-              <UserCheck className="text-primary-600" size={24} />
-              Identity Details
-            </h3>
-            <div className="space-y-6">
-              <IdentityItem icon={Mail} label="Contact Email" value={profile?.email} />
-              <IdentityItem icon={Building2} label="Institution Context" value="Main Campus • Engineering" />
-              {isStudent && <IdentityItem icon={Target} label="Roll Number" value={profile?.rollNumber} />}
-              {isAlumni && <IdentityItem icon={Briefcase} label="Current Status" value={`${profile?.currentPosition} @ ${profile?.currentCompany}`} />}
-              {isAdmin && <IdentityItem icon={Settings} label="Access Level" value="Full System Authorization" />}
-            </div>
-            {profile?.linkedinUrl && (
-              <div className="pt-8 border-t border-secondary-100">
-                <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" className="w-full h-14 rounded-2xl border-secondary-200 hover:bg-blue-50 hover:border-blue-200 group">
-                    <Linkedin size={20} className="mr-3 text-blue-600 group-hover:scale-110 transition-transform" />
-                    Professional Profile
-                  </Button>
-                </a>
+          <ScrollReveal variant="fade-left">
+            <Card className="p-8 space-y-8 border-none shadow-soft rounded-[40px]" hover={false}>
+              <h3 className="text-xl font-black text-secondary-900 tracking-tight flex items-center gap-3">
+                <UserCheck className="text-primary-600" size={24} />
+                Identity Details
+              </h3>
+              <div className="space-y-6">
+                <IdentityItem icon={Mail} label="Contact Email" value={profile?.email} />
+                <IdentityItem icon={Building2} label="Institution Context" value="Main Campus • Engineering" />
+                {isStudent && <IdentityItem icon={Target} label="Roll Number" value={profile?.rollNumber} />}
+                {isAlumni && <IdentityItem icon={Briefcase} label="Current Status" value={`${profile?.currentPosition} @ ${profile?.currentCompany}`} />}
+                {isAdmin && <IdentityItem icon={Settings} label="Access Level" value="Full System Authorization" />}
               </div>
-            )}
-          </Card>
+              {profile?.linkedinUrl && (
+                <div className="pt-8 border-t border-secondary-100">
+                  <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" className="w-full h-14 rounded-2xl border-secondary-200 hover:bg-blue-50 hover:border-blue-200 group">
+                      <Linkedin size={20} className="mr-3 text-blue-600 group-hover:scale-110 transition-transform" />
+                      Professional Profile
+                    </Button>
+                  </a>
+                </div>
+              )}
+            </Card>
+          </ScrollReveal>
 
           {isAlumni && (
-            <Card className={`p-8 border-none rounded-[40px] text-white shadow-premium relative overflow-hidden transition-all duration-500 ${profile?.availableForMentoring ? 'bg-gradient-to-br from-emerald-600 to-teal-700' : 'bg-gradient-to-br from-secondary-800 to-secondary-900'}`} hover={false}>
-              <div className="relative z-10 space-y-4">
-                <div className="flex justify-between items-start">
-                  <h4 className="text-xl font-black">Mentorship Status</h4>
-                  <div className={`w-3 h-3 rounded-full animate-pulse ${profile?.availableForMentoring ? 'bg-emerald-300' : 'bg-secondary-500'}`} />
+            <ScrollReveal variant="fade-left" delay={0.1}>
+              <Card className={`p-8 border-none rounded-[40px] text-white shadow-premium relative overflow-hidden transition-all duration-500 ${profile?.availableForMentoring ? 'bg-gradient-to-br from-emerald-600 to-teal-700' : 'bg-gradient-to-br from-secondary-800 to-secondary-900'}`} hover={false}>
+                <div className="relative z-10 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <h4 className="text-xl font-black">Mentorship Status</h4>
+                    <motion.div
+                      animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className={`w-3 h-3 rounded-full ${profile?.availableForMentoring ? 'bg-emerald-300' : 'bg-secondary-500'}`}
+                    />
+                  </div>
+                  <p className="text-white/80 font-medium text-sm">
+                    {profile?.availableForMentoring
+                      ? 'You are currently available to guide students.'
+                      : 'Turn on mentorship to help the next generation!'}
+                  </p>
+                  <Button
+                    variant="glass"
+                    className="w-full bg-white/20 hover:bg-white/30 border-white/20 rounded-2xl h-12"
+                    onClick={() => {
+                      const newStatus = !profile.availableForMentoring;
+                      setProfile({ ...profile, availableForMentoring: newStatus });
+                      userAPI.updateMe({ ...profile, availableForMentoring: newStatus })
+                        .then(() => toast.success(`Mentorship ${newStatus ? 'Enabled' : 'Disabled'}`))
+                        .catch(() => toast.error('Failed to update status'));
+                    }}
+                  >
+                    {profile?.availableForMentoring ? 'Disable Mentorship' : 'Enable Mentorship'}
+                  </Button>
                 </div>
-                <p className="text-white/80 font-medium text-sm">
-                  {profile?.availableForMentoring
-                    ? "You are currently marked as available to guide students. Your profile is visible in the Mentors directory."
-                    : "Help the next generation! Turn on mentorship to share your experience with current students."}
-                </p>
-                <Button
-                  variant="glass"
-                  className="w-full bg-white/20 hover:bg-white/30 border-white/20 rounded-2xl h-12"
-                  onClick={() => {
-                    const newStatus = !profile.availableForMentoring;
-                    setProfile({ ...profile, availableForMentoring: newStatus });
-                    userAPI.updateMe({ ...profile, availableForMentoring: newStatus })
-                      .then(() => toast.success(`Mentorship ${newStatus ? 'Enabled' : 'Disabled'}`))
-                      .catch(() => toast.error('Failed to update status'));
-                  }}
-                >
-                  {profile?.availableForMentoring ? "Disable Mentorship" : "Enable Mentorship"}
-                </Button>
-              </div>
-              <Users size={180} className="absolute -right-16 -bottom-16 text-white/10" />
-            </Card>
+                <Users size={180} className="absolute -right-16 -bottom-16 text-white/10" />
+              </Card>
+            </ScrollReveal>
           )}
 
           {isAdmin && (
-            <Card className="p-8 bg-gradient-to-br from-indigo-600 to-violet-700 border-none rounded-[40px] text-white shadow-premium relative overflow-hidden" hover={false}>
-              <div className="relative z-10 space-y-4">
-                <h4 className="text-xl font-black">System Statistics</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/10 p-3 rounded-2xl border border-white/10">
-                    <p className="text-2xl font-black">4.2k</p>
-                    <p className="text-[10px] uppercase font-bold text-indigo-200">Total Users</p>
-                  </div>
-                  <div className="bg-white/10 p-3 rounded-2xl border border-white/10">
-                    <p className="text-2xl font-black">12</p>
-                    <p className="text-[10px] uppercase font-bold text-indigo-200">Reports</p>
+            <ScrollReveal variant="fade-left" delay={0.15}>
+              <Card className="p-8 bg-gradient-to-br from-indigo-600 to-violet-700 border-none rounded-[40px] text-white shadow-premium relative overflow-hidden" hover={false}>
+                <div className="relative z-10 space-y-4">
+                  <h4 className="text-xl font-black">System Statistics</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white/10 p-3 rounded-2xl border border-white/10">
+                      <p className="text-2xl font-black">4.2k</p>
+                      <p className="text-[10px] uppercase font-bold text-indigo-200">Total Users</p>
+                    </div>
+                    <div className="bg-white/10 p-3 rounded-2xl border border-white/10">
+                      <p className="text-2xl font-black">12</p>
+                      <p className="text-[10px] uppercase font-bold text-indigo-200">Reports</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <Activity size={180} className="absolute -right-16 -bottom-16 text-white/10" />
-            </Card>
+                <Activity size={180} className="absolute -right-16 -bottom-16 text-white/10" />
+              </Card>
+            </ScrollReveal>
           )}
         </aside>
 
-        {/* Right Content Form */}
-        <main className="lg:col-span-8 space-y-8">
+        {/* Right Content - Tabbed */}
+        <main className="lg:col-span-8 space-y-6">
+          {/* Animated Tab Switcher */}
+          <div className="flex gap-1 p-1.5 bg-secondary-100 rounded-2xl w-fit">
+            {['portfolio', 'settings'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className="relative px-6 py-2.5 rounded-xl text-sm font-black capitalize transition-colors"
+              >
+                {activeTab === tab && (
+                  <motion.div
+                    layoutId="tab-pill"
+                    className="absolute inset-0 bg-white rounded-xl shadow-sm"
+                    transition={{ type: 'spring', damping: 26, stiffness: 280 }}
+                  />
+                )}
+                <span className={`relative z-10 transition-colors ${activeTab === tab ? 'text-secondary-900' : 'text-secondary-500'}`}>
+                  {tab === 'portfolio' ? 'Portfolio' : 'Settings'}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            >
           <Card className="p-10 border-none shadow-soft rounded-[40px]" hover={false}>
             <form onSubmit={handleSubmit} className="space-y-10">
               <div className="flex items-center justify-between">
@@ -388,6 +459,8 @@ export default function Profile() {
               )}
             </form>
           </Card>
+          </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </AnimatedPage>

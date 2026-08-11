@@ -9,6 +9,8 @@ import Input from '../components/ui/Input';
 import Badge from '../components/ui/Badge';
 import Skeleton from '../components/ui/Skeleton';
 import AnimatedPage from '../components/ui/AnimatedPage';
+import { ScrollRevealList, ScrollRevealItem } from '../components/ui/ScrollReveal';
+import { motion } from 'framer-motion';
 import {
   Users,
   Search,
@@ -79,14 +81,16 @@ export default function Alumni() {
   };
 
   const filteredAlumni = alumni.filter(person => {
-    const isLinked = sentRequests.has(person.id);
-    if (isLinked) return false;
-
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
     return (
-      person.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      person.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      person.currentCompany?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      person.department?.toLowerCase().includes(searchTerm.toLowerCase())
+      person.firstName?.toLowerCase().includes(searchLower) ||
+      person.lastName?.toLowerCase().includes(searchLower) ||
+      person.currentCompany?.toLowerCase().includes(searchLower) ||
+      person.currentPosition?.toLowerCase().includes(searchLower) ||
+      person.department?.toLowerCase().includes(searchLower) ||
+      person.skills?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -94,7 +98,9 @@ export default function Alumni() {
     <div className="space-y-8 animate-pulse p-2">
       <div className="h-10 w-48 bg-secondary-100 rounded-2xl" />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <div key={i} className="h-72 bg-secondary-100 rounded-[32px]" />)}
+        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+          <Skeleton key={i} variant="card" className="h-72" />
+        ))}
       </div>
     </div>
   );
@@ -137,17 +143,18 @@ export default function Alumni() {
           <p className="text-secondary-500 font-black">No alumni found matching your criteria</p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
-          {filteredAlumni.map((person, idx) => (
-            <AlumniCard
-              key={person.id}
-              person={person}
-              isSent={sentRequests.has(person.id)}
-              onConnect={() => handleConnect(person.id)}
-              delay={idx * 0.05}
-            />
+        <ScrollRevealList className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8" staggerDelay={0.07}>
+          {filteredAlumni.map((person) => (
+            <ScrollRevealItem key={person.id} variant="fade-up">
+              <AlumniCard
+                person={person}
+                isSent={sentRequests.has(person.id)}
+                onConnect={() => handleConnect(person.id)}
+                delay={0}
+              />
+            </ScrollRevealItem>
           ))}
-        </div>
+        </ScrollRevealList>
       )}
     </AnimatedPage>
   );

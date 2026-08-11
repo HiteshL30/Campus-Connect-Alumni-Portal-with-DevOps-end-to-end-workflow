@@ -1,0 +1,158 @@
+services:
+
+  # ==========================================
+  # MySQL
+  # ==========================================
+
+  mysql:
+    image: mysql:8
+    container_name: mysql_db
+    restart: always
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-uroot",
+          "-p${MYSQL_ROOT_PASSWORD}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+    networks:
+      - backend-network
+
+
+  # ==========================================
+  # Spring Boot Backend
+  # ==========================================
+
+  backend:
+    build: ./backend
+    container_name: spring_backend
+    restart: always
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+    ports:
+      - "5001:8080"
+
+    environment:
+
+      # Spring
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+
+      # Database
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+
+      # HikariCP
+      DB_POOL_SIZE: ${DB_POOL_SIZE}
+      DB_MIN_IDLE: ${DB_MIN_IDLE}
+
+      # LLM
+      LLM_PROVIDER: ${LLM_PROVIDER}
+      LLM_LLAMA_URL: ${LLM_LLAMA_URL}
+      LLM_LLAMA_MODEL: ${LLM_LLAMA_MODEL}
+      LLM_LLAMA_TIMEOUT: ${LLM_LLAMA_TIMEOUT}
+
+      # Gemini
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost:8080/actuator/health"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+    networks:
+      - frontend-network
+      - backend-network
+
+
+  # ==========================================
+  # React Frontend + Nginx
+  # ==========================================
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api
+
+    container_name: react_frontend
+    restart: always
+
+    ports:
+      - "3001:80"
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost/"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    networks:
+      - frontend-network
+
+
+# ==========================================
+# Networks
+# ==========================================
+
+networks:
+
+  frontend-network:
+    driver: bridge
+
+  backend-network:
+    driver: bridge
+
+
+# ==========================================
+# Persistent Volumes
+# ==========================================
+
+volumes:
+
+  mysql_data:

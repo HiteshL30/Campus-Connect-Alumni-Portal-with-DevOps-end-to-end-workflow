@@ -9,6 +9,9 @@ import Input from '../components/ui/Input';
 import Badge from '../components/ui/Badge';
 import Skeleton from '../components/ui/Skeleton';
 import AnimatedPage from '../components/ui/AnimatedPage';
+import { ScrollRevealList, ScrollRevealItem } from '../components/ui/ScrollReveal';
+import AnimatedModal from '../components/ui/AnimatedModal';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Briefcase,
   MapPin,
@@ -119,17 +122,7 @@ export default function Jobs() {
       <div className="h-10 w-48 bg-secondary-100 rounded-2xl animate-pulse" />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {[1, 2, 3, 4, 5, 6].map(i => (
-          <div key={i} className="h-[400px] bg-white rounded-[32px] border border-secondary-100 p-8 space-y-6">
-            <Skeleton className="w-16 h-16 rounded-[28px]" />
-            <div className="space-y-3">
-              <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-            <div className="space-y-3">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-            </div>
-          </div>
+          <Skeleton key={i} variant="card" className="h-[380px]" />
         ))}
       </div>
     </div>
@@ -169,10 +162,12 @@ export default function Jobs() {
             />
           </form>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0">
           {['All', 'Full-time', 'Internship', 'Contract', 'Remote'].map((type) => (
-            <button
+            <motion.button
               key={type}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => setSelectedType(type)}
               className={`px-6 py-4 rounded-2xl text-sm font-black transition-all whitespace-nowrap shadow-soft
                 ${selectedType === type
@@ -180,7 +175,7 @@ export default function Jobs() {
                   : 'bg-white text-secondary-500 hover:text-secondary-900 hover:bg-secondary-50'}`}
             >
               {type}
-            </button>
+            </motion.button>
           ))}
         </div>
       </div>
@@ -195,28 +190,31 @@ export default function Jobs() {
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+          <ScrollRevealList className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8" staggerDelay={0.06}>
             {filteredJobs.map((job, idx) => (
-              <JobCard
-                key={job.id}
-                job={job}
-                delay={idx * 0.05}
-                currentUserId={user?.id}
-                onDelete={handleDelete}
-              />
+              <ScrollRevealItem key={job.id} variant="fade-up">
+                <JobCard
+                  job={job}
+                  delay={0}
+                  currentUserId={user?.id}
+                  onDelete={handleDelete}
+                />
+              </ScrollRevealItem>
             ))}
-          </div>
+          </ScrollRevealList>
 
           {pagination.totalPages > 1 && (
             <div className="flex justify-center gap-2 pt-10">
               {[...Array(pagination.totalPages)].map((_, i) => (
-                <button
+                <motion.button
                   key={i}
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.93 }}
                   onClick={() => loadJobs(i)}
                   className={`w-12 h-12 rounded-xl font-black transition-all ${pagination.page === i ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30' : 'bg-white text-secondary-500 hover:bg-secondary-50'}`}
                 >
                   {i + 1}
-                </button>
+                </motion.button>
               ))}
             </div>
           )}

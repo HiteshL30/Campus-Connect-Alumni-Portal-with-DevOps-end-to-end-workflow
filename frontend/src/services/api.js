@@ -12,19 +12,60 @@ const api = axios.create({
 });
 
 // Request Interceptor: Attach JWT
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token && !config.headers.Authorization) {
-    config.headers.Authorization = `Bearer ${token}`;
+// Add custom request interceptor handler for tokens
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
+);
 
-// Response Interceptor: Global Error Handling
+// Add retry logic for connection refused / global interceptor
 api.interceptors.response.use(
-  (response) => response,
+  response => response,
+  error => {
+    if (error.code === 'ERR_CONNECTION_REFUSED' || error.message === 'Network Error') {
+      console.error('❌ Backend server is not running!');
+      console.error('Please start Spring Boot backend on port 8080');
+      
+      // Show user-friendly message
+      const customError = {
+        ...error,
+        message: 'Backend server is not running. Please ensure Spring Boot is started on port 8080.',
+        isNetworkError: true
+      };
+      return Promise.reject(customError);
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Response Interceptor: Global Error Handling & Data Sanitization
+api.interceptors.response.use(
+  (response) => {
+    // Recursively sanitize NaN values to 0 to prevent React render crashes
+    const sanitize = (obj) => {
+      if (typeof obj === 'number' && isNaN(obj)) return 0;
+      if (Array.isArray(obj)) return obj.map(sanitize);
+      if (obj && typeof obj === 'object') {
+        Object.keys(obj).forEach(key => {
+          obj[key] = sanitize(obj[key]);
+        });
+      }
+      return obj;
+    };
+    
+    if (response.data) {
+      response.data = sanitize(response.data);
+    }
+    return response;
+  },
   (error) => {
     const { response, config } = error;
 
@@ -143,11 +184,12 @@ export const userAPI = {
   getMe: () => api.get('/users/me'),
   updateMe: (data) => api.put('/users/me', data),
   updateProfile: (data) => api.put('/alumni/profile', data),
-  getStats: () => api.get('/users/stats')
+  getStats: () => api.get('/stats/sidebar')
 };
 
 export const notificationAPI = {
   getAll: (params) => api.get('/notifications', { params }),
+  getUnread: () => api.get('/notifications/unread'),
   getUnreadCount: () => api.get('/notifications/unread-count').then(res => res.data.count),
   markAsRead: (id) => api.post(`/notifications/${id}/read`),
   markAllAsRead: () => api.post('/notifications/read-all')

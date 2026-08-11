@@ -9,8 +9,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 @EnableConfigurationProperties(FileStorageProperties.class)
 @org.springframework.scheduling.annotation.EnableScheduling
 @org.springframework.retry.annotation.EnableRetry
+@org.springframework.context.annotation.ComponentScan(basePackages = {"com.alumniconnect"})
 public class AlumniConnectApplication {
     public static void main(String[] args) {
+        System.out.println(">>> APPLICATION STARTED <<<");
         SpringApplication.run(AlumniConnectApplication.class, args);
     }
 }

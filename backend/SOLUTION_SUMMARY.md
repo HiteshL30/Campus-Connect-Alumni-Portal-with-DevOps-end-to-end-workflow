@@ -83,7 +83,7 @@ Execute `DATABASE_FIX_COMPLETE.sql` in MySQL:
 
 **Option A: MySQL Workbench**
 1. Open MySQL Workbench
-2. Connect to `localhost:3306` (password: `1234`)
+2. Connect to `localhost:3306` (password: `root`)
 3. File → Open SQL Script → `DATABASE_FIX_COMPLETE.sql`
 4. Click Execute (⚡)
 
@@ -94,7 +94,7 @@ Execute `DATABASE_FIX_COMPLETE.sql` in MySQL:
 
 **Option C: Command Line**
 ```bash
-mysql -u root -p1234 alumni_connect < DATABASE_FIX_COMPLETE.sql
+mysql -u root -proot alumni_connect < DATABASE_FIX_COMPLETE.sql
 ```
 
 ### Step 2: Restart Backend

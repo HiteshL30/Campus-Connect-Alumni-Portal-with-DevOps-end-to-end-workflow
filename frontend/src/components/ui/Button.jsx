@@ -1,49 +1,112 @@
 import { motion } from 'framer-motion';
-import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { buttonClick } from '../../utils/animations';
+import { useCallback, useRef } from 'react';
+
+const variants = {
+    primary: 'bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-500/20',
+    secondary: 'bg-secondary-100 hover:bg-secondary-200 text-secondary-800',
+    outline: 'border border-secondary-200 bg-white hover:bg-secondary-50 text-secondary-700',
+    ghost: 'bg-transparent hover:bg-secondary-100 text-secondary-600',
+    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20',
+    success: 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20',
+    gradient: 'text-white shadow-lg',
+};
+
+const sizes = {
+    xs: 'text-xs px-3 py-1.5 rounded-lg',
+    sm: 'text-sm px-4 py-2 rounded-xl',
+    md: 'text-sm px-5 py-2.5 rounded-xl',
+    lg: 'text-base px-7 py-3.5 rounded-2xl',
+    xl: 'text-lg px-8 py-4 rounded-2xl',
+};
 
 const Button = ({
     children,
     variant = 'primary',
     size = 'md',
     className = '',
-    isLoading = false,
+    disabled = false,
+    loading = false,
+    isLoading = false,   // alias support — consumed here, never forwarded to DOM
+    gradient = false,
+    ripple = true,
+    onClick,
+    type = 'button',
+    // Explicitly destructure any other non-DOM custom props here
+    loadingText,         // consumed if passed, not forwarded
     ...props
 }) => {
-    const baseStyles = 'inline-flex items-center justify-center font-bold transition-colors disabled:opacity-50 disabled:pointer-events-none rounded-2xl relative overflow-hidden';
+    // Merge isLoading alias
+    const isLoadingState = loading || isLoading;
+    const ref = useRef(null);
 
-    const variants = {
-        primary: 'bg-primary-600 text-white hover:bg-primary-700 shadow-lg shadow-primary-500/20 active:shadow-none',
-        secondary: 'bg-secondary-100 text-secondary-900 hover:bg-secondary-200 border border-secondary-200/50',
-        outline: 'bg-transparent border-2 border-secondary-200 text-secondary-700 hover:border-primary-500 hover:text-primary-600',
-        ghost: 'bg-transparent text-secondary-600 hover:bg-secondary-50',
-        danger: 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-100'
-    };
+    // Ripple handler
+    const handleClick = useCallback((e) => {
+        if (disabled || isLoadingState || !ripple) return;
+        const el = ref.current;
+        if (!el) return;
 
-    const sizes = {
-        sm: 'px-4 py-2 text-sm',
-        md: 'px-6 py-3 text-base',
-        lg: 'px-8 py-4 text-lg',
-    };
+        const rect = el.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const rippleEl = document.createElement('span');
+        rippleEl.style.cssText = `
+            position: absolute;
+            width: ${size}px;
+            height: ${size}px;
+            left: ${e.clientX - rect.left - size / 2}px;
+            top: ${e.clientY - rect.top - size / 2}px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            pointer-events: none;
+            transform: scale(0);
+            animation: ripple 0.55s linear forwards;
+            z-index: 10;
+        `;
+        el.appendChild(rippleEl);
+        setTimeout(() => rippleEl.remove(), 650);
+        onClick?.(e);
+    }, [disabled, isLoadingState, ripple, onClick]);
+
+    const gradientStyle = gradient ? {
+        background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+        backgroundSize: '200% 200%',
+    } : {};
 
     return (
         <motion.button
-            whileHover="hover"
-            whileTap="tap"
-            variants={buttonClick}
-            className={twMerge(baseStyles, variants[variant], sizes[size], className)}
+            ref={ref}
+            type={type}
+            whileHover={!disabled && !isLoadingState ? {
+                scale: 1.02,
+                transition: { type: 'spring', stiffness: 400, damping: 20 }
+            } : undefined}
+            whileTap={!disabled && !isLoadingState ? {
+                scale: 0.96,
+                transition: { type: 'spring', stiffness: 400, damping: 25 }
+            } : undefined}
+            onClick={handleClick}
+            disabled={disabled || isLoadingState}
+            style={gradientStyle}
+            className={twMerge(
+                'relative overflow-hidden inline-flex items-center justify-center gap-2',
+                'font-semibold transition-colors duration-200',
+                'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50',
+                variants[variant] || variants.primary,
+                sizes[size] || sizes.md,
+                gradient && variants.gradient,
+                className
+            )}
             {...props}
         >
-            {isLoading ? (
-                <div className="flex items-center gap-2">
-                    <svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Loading...</span>
-                </div>
-            ) : children}
+            {isLoadingState && (
+                <motion.span
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}
+                    className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+                />
+            )}
+            {children}
         </motion.button>
     );
 };

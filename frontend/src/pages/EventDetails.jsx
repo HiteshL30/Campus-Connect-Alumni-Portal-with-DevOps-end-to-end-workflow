@@ -7,6 +7,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import AnimatedPage from '../components/ui/AnimatedPage';
+import SafeText from '../components/ui/SafeText';
 import {
     ArrowLeft,
     Calendar,
@@ -104,7 +105,7 @@ export default function EventDetails() {
                                 </Badge>
                             </div>
                             <h1 className="text-4xl md:text-5xl font-black text-white leading-tight tracking-tighter max-w-3xl">
-                                {event.title}
+                                <SafeText>{event.title}</SafeText>
                             </h1>
                         </div>
                     </section>
@@ -151,8 +152,10 @@ export default function EventDetails() {
                                     <MapPin size={24} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h4 className="font-black text-secondary-900 truncate">Campus Location</h4>
-                                    <p className="text-xs font-bold text-secondary-500 uppercase tracking-widest mt-1 truncate">{event.location || 'Session Link TBD'}</p>
+                                    <h4 className="font-black text-secondary-900">Campus Location</h4>
+                                    <p className="text-xs font-bold text-secondary-500 uppercase tracking-widest mt-1 truncate">
+                                        <SafeText fallback="Session Link TBD">{event.location}</SafeText>
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -196,7 +199,9 @@ export default function EventDetails() {
                                 {event.organizerName?.charAt(0) || 'C'}
                             </div>
                             <div>
-                                <p className="text-white font-bold">{event.organizerName || 'Campus Admin'}</p>
+                                <p className="text-white font-bold">
+                                    <SafeText fallback="Campus Admin">{event.organizerName}</SafeText>
+                                </p>
                                 <p className="text-xs text-secondary-400 font-bold uppercase tracking-tighter">Verified Official</p>
                             </div>
                         </div>

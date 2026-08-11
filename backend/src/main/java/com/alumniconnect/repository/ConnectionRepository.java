@@ -43,4 +43,13 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
 
        @Query("SELECT COUNT(c) FROM Connection c WHERE c.receiver = :user AND c.status = 'REQUESTED'")
        long countPendingRequestsForUser(@Param("user") User user);
+
+       @Query("SELECT COUNT(c) FROM Connection c WHERE (c.requester = :user OR c.receiver = :user) AND c.status = 'ACCEPTED'")
+       long countConnectionsForUser(@Param("user") User user);
+       
+       @Query(value = "SELECT COUNT(*) FROM connections WHERE (requester_id = :userId OR receiver_id = :userId) AND status = 'ACCEPTED'", nativeQuery = true)
+       int countAcceptedConnectionsNative(@Param("userId") Long userId);
+    
+       @Query(value = "SELECT COUNT(*) FROM connections WHERE receiver_id = :userId AND status = 'REQUESTED'", nativeQuery = true)
+       int countPendingRequestsNative(@Param("userId") Long userId);
 }

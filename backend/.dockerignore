@@ -1,0 +1,14 @@
+target
+.mvn
+.idea
+.vscode
+*.log
+*.sql
+boot_run.log
+build_log.txt
+build_log_phase2.txt
+build_output.txt
+compile_error.txt
+classpath.txt
+effective_pom.xml
+start_error.log
