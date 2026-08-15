@@ -6,7 +6,7 @@ webhook-test:
   image: alpine:3.20
 
   script:
-    - echo "GitHub successfully triggered GitLab...!"
+    - echo "Hey.. GitHub successfully triggered GitLab...!"
     - echo "Commit: $CI_COMMIT_SHA"
     - echo "Branch: $CI_COMMIT_REF_NAME"
     - echo "Pipeline source: $CI_PIPELINE_SOURCE"
