@@ -41,8 +41,7 @@ services:
   # ==========================================
 
   backend:
-    build:
-      context: ./backend
+    image: hlanjewar/campus-connect-backend:latest
 
     container_name: spring_backend
     restart: unless-stopped
@@ -105,10 +104,7 @@ services:
   # ==========================================
 
   frontend:
-    build:
-      context: ./frontend
-      args:
-        VITE_API_BASE_URL: /api
+    image: hlanjewar/campus-connect-frontend:latest
 
     container_name: react_frontend
     restart: unless-stopped
