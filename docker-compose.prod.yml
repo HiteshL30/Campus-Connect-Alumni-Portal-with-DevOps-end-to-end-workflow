@@ -41,7 +41,7 @@ services:
   # ==========================================
 
   backend:
-    image: hlanjewar/campus-connect-backend:latest
+    image: hlanjewar/campus-connect-backend:${IMAGE_TAG}
 
     container_name: spring_backend
     restart: unless-stopped
@@ -104,7 +104,7 @@ services:
   # ==========================================
 
   frontend:
-    image: hlanjewar/campus-connect-frontend:latest
+    image: hlanjewar/campus-connect-frontend:${IMAGE_TAG}
 
     container_name: react_frontend
     restart: unless-stopped
