@@ -570,6 +570,3 @@ Aspiring DevOps Engineer
 If you find this project useful or are learning DevOps, feel free to explore the repository and the implementation.
 
 ````
-
-
-
