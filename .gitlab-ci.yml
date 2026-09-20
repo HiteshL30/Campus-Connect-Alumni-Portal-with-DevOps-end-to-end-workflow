@@ -1,0 +1,403 @@
+stages:
+  - source
+  - validate
+  - test
+  - docker-build
+  - security
+  - docker-push
+  - deploy
+  - verify
+
+  # GLOBAL VARIABLES
+
+variables:
+  PROJECT_NAME: "Campus Connect"
+  COMPOSE_FILE: "docker-compose.prod.yml"
+  SOURCE_DIR: "campus-connect"
+
+  BACKEND_IMAGE: "$DOCKERHUB_USERNAME/campus-connect-backend"
+  FRONTEND_IMAGE: "$DOCKERHUB_USERNAME/campus-connect-frontend"
+  IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
+
+# 1. DOWNLOAD SOURCE FROM GITHUB
+
+download-source:
+  stage: source
+  image: alpine:3.20
+
+  script:
+    - apk add --no-cache git
+
+    - echo "Downloading $PROJECT_NAME source"
+
+
+    - git clone https://x-access-token:${GITHUB_PAT}@github.com/HiteshL30/Campus-Connect-Alumni-Portal-with-DevOps-end-to-end-workflow.git "$SOURCE_DIR"
+
+    - echo "GitHub source downloaded successfully"
+
+    - test -f "$SOURCE_DIR/$COMPOSE_FILE" || (echo "$COMPOSE_FILE not found" && exit 1)
+    - test -d "$SOURCE_DIR/backend" || (echo "backend directory not found" && exit 1)
+    - test -d "$SOURCE_DIR/frontend" || (echo "frontend directory not found" && exit 1)
+    - test -d "$SOURCE_DIR/database" || (echo "database directory not found" && exit 1)
+
+    - echo "Required project files found"
+
+  artifacts:
+    paths:
+      - campus-connect/
+    expire_in: 1 hour
+
+
+# 2. VALIDATE PROJECT
+
+validate-project:
+  stage: validate
+  image: alpine:3.20
+
+  needs:
+    - job: download-source
+      artifacts: true
+
+  script:
+    - echo "Validating $PROJECT_NAME"
+
+    - cd "$SOURCE_DIR"
+
+    - echo "Branch:$CI_COMMIT_REF_NAME"
+    - echo "Pipeline source:$CI_PIPELINE_SOURCE"
+    - echo "Commit:$CI_COMMIT_SHORT_SHA"
+
+    - echo "Production Compose file:"
+    - ls -lh "$COMPOSE_FILE"
+
+    - echo "Project directories:"
+    - ls -ld backend frontend database
+
+    - echo "Project validation successful"
+
+
+# 3. BACKEND TEST
+
+backend-test:
+  stage: test
+  image: maven:3.9-eclipse-temurin-17
+
+  needs:
+    - job: download-source
+      artifacts: true
+
+  script:
+    - echo "Running Spring Boot backend tests"
+    - cd "$SOURCE_DIR/backend"
+    - mvn test -B
+    - echo "Backend tests passed"
+
+# 4. FRONTEND TEST
+
+frontend-test:
+  stage: test
+  image: node:20-alpine
+
+  needs:
+    - job: download-source
+      artifacts: true
+
+  script:
+    - echo "Running React frontend build"
+    - cd "$SOURCE_DIR/frontend"
+    - npm ci
+    - npm run build
+    - echo "Frontend build passed"
+
+# 5. DOCKER IMAGE BUILD
+
+docker-build:
+  stage: docker-build
+
+  image: docker:27.5.1
+
+  services:
+    - name: docker:27.5.1-dind
+      alias: docker
+
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+
+  needs:
+    - job: download-source
+      artifacts: true
+
+    - job: backend-test
+
+    - job: frontend-test
+    
+  script:
+    - echo "Building Campus Connect Docker images"
+    - echo "Image Tag:$IMAGE_TAG"
+
+    - cd "$SOURCE_DIR"
+
+    # Build Backend
+    - echo "Building backend image..."
+    - docker build -t "$BACKEND_IMAGE:$IMAGE_TAG" ./backend
+
+    # Build Frontend
+    - echo "Building frontend image..."
+    - docker build --build-arg VITE_API_BASE_URL=/api -t "$FRONTEND_IMAGE:$IMAGE_TAG" ./frontend
+    
+    - echo "Docker images built successfully"
+
+    - docker images
+
+    # Save Docker images for security stage
+    - mkdir -p docker-images
+
+    - echo "Saving backend image..."
+    - docker save "$BACKEND_IMAGE:$IMAGE_TAG" -o docker-images/backend.tar
+
+    - echo "Saving frontend image..."
+    - docker save "$FRONTEND_IMAGE:$IMAGE_TAG" -o docker-images/frontend.tar
+
+    - echo "Docker images saved successfully"
+    - ls -lh docker-images/
+
+  artifacts:
+    paths:
+      - "$SOURCE_DIR/docker-images/"
+    expire_in: 1 hour
+
+#6. SECURITY SCAN - TRIVY
+
+security-scan:
+  stage: security
+
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+
+  needs:
+    - job: docker-build
+      artifacts: true
+
+  script:
+    - echo "Running Docker Image Security Scans...."
+
+    - echo "Scanning Backend Image..."
+    - trivy image --input "$SOURCE_DIR/docker-images/backend.tar" --severity HIGH,CRITICAL --exit-code 0
+
+    - echo "Scanning Frontend Image..."
+    - trivy image --input "$SOURCE_DIR/docker-images/frontend.tar" --severity HIGH,CRITICAL --exit-code 0
+
+    - echo "Security scan completed successfully"
+
+# 6. DOCKER HUB PUSH
+
+docker-push:
+  stage: docker-push
+
+  image: docker:27.5.1
+
+  services:
+    - name: docker:27.5.1-dind
+      alias: docker
+
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+
+  needs:
+    - job: download-source
+      artifacts: true
+
+    - job: docker-build
+      artifacts: true
+
+  script:
+
+    - echo "Logging in to Docker Hub"
+
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+
+    - cd "$SOURCE_DIR"
+
+    # Load the EXACT images that were built and scanned
+    - echo "Loading backend image..."
+    - docker load -i docker-images/backend.tar
+
+    - echo "Loading frontend image..."
+    - docker load -i docker-images/frontend.tar
+
+    - echo "Images loaded successfully"
+    - docker images
+
+    # Tag backend image for Docker Hub
+    - echo "Tagging backend image..."
+    - docker tag "$BACKEND_IMAGE:$IMAGE_TAG" "$BACKEND_IMAGE:latest"
+
+    # Tag frontend image for Docker Hub
+    - echo "Tagging frontend image..."
+    - docker tag "$FRONTEND_IMAGE:$IMAGE_TAG" "$FRONTEND_IMAGE:latest"
+
+    # Push backend image
+    - echo "Pushing backend image..."
+    - docker push "$BACKEND_IMAGE:$IMAGE_TAG"
+    - docker push "$BACKEND_IMAGE:latest"
+
+    # Push frontend image
+    - echo "Pushing frontend image..."
+    - docker push "$FRONTEND_IMAGE:$IMAGE_TAG"
+    - docker push "$FRONTEND_IMAGE:latest"
+
+    - echo "Docker Hub push successfull"
+
+# 7. TEST GITLAB → AWS EC2 SSH CONNECTION
+
+deploy-production:
+  stage: deploy
+  image: alpine:3.20
+
+  needs:
+    - job: download-source
+      artifacts: true
+    - job: docker-push
+
+  before_script:
+    - apk add --no-cache openssh-client netcat-openbsd
+
+  # Test EC2 SSH port connectivity
+    - echo "Testing GitLab Runner to EC2 network connectivity"
+    - echo "EC2_HOST=$EC2_HOST"
+    - nc -vz -w 10 "$EC2_HOST" 22
+
+   # Start SSH agent
+    - eval "$(ssh-agent -s)"
+
+  # Secure GitLab File variable before loading private key
+    - chmod 600 "$SSH_PRIVATE_KEY"
+    - ssh-add "$SSH_PRIVATE_KEY"
+
+  # Configure SSH
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+
+  # Add EC2 server fingerprint
+    - ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+
+  script:
+    - echo "Copying production Docker Compose file to EC2..."
+
+    - scp "$SOURCE_DIR/$COMPOSE_FILE" "$EC2_USER@$EC2_HOST:~/campus-connect/docker-compose.prod.yml"
+
+    - echo "Deploying Campus Connect to AWS EC2..."
+    - echo "Deploying version:$CI_COMMIT_SHORT_SHA"
+
+    - |
+      ssh "$EC2_USER@$EC2_HOST" "NEW_IMAGE_TAG=$CI_COMMIT_SHORT_SHA" << 'EOF'
+        set -e
+
+        echo "Connected to AWS EC2 successfully"
+
+        cd ~/campus-connect
+
+         # Save the previous version before changing it
+        PREVIOUS_TAG=$(grep '^IMAGE_TAG=' .env | cut -d '=' -f2 || true)
+
+        echo "Previous version:$PREVIOUS_TAG"
+        echo "New version:$NEW_IMAGE_TAG"
+
+         # Save previous version for future rollback
+        if [ -n "$PREVIOUS_TAG" ]; then
+          echo "$PREVIOUS_TAG" > .previous_image_tag
+        fi
+
+
+        # Replace IMAGE_TAG safely
+        if grep -q '^IMAGE_TAG='.env; then
+          sed -i "s/^IMAGE_TAG=./d" .env
+        fi
+
+         echo "IMAGE_TAG=$NEW_IMAGE_TAG" >> .env
+
+       echo "Current deployment configuration:"
+        grep '^IMAGE_TAG=' .env
+
+        echo "Pulling exact versioned Docker images"
+
+        docker compose -f docker-compose.prod.yml pull
+
+        echo "Recreating containers with new version"
+
+        docker compose -f docker-compose.prod.yml up -d --force-recreate
+
+        echo "Container status after deployment"
+
+        docker compose -f docker-compose.prod.yml ps
+
+      EOF
+
+  only:
+    - main
+
+verify-production:
+  stage: verify
+  image: alpine:3.20
+
+  needs:
+    - job: deploy-production
+
+  before_script:
+    - apk add --no-cache openssh-client netcat-openbsd
+
+    # Test EC2 SSH connectivity
+    - echo "Testing EC2 SSH connectivity..."
+    - nc -vz -w 10 "$EC2_HOST" 22
+
+    # Start SSH agent
+    - eval "$(ssh-agent -s)"
+
+    # Load SSH private key
+    - chmod 600 "$SSH_PRIVATE_KEY"
+    - ssh-add "$SSH_PRIVATE_KEY"
+
+    # Configure SSH
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+
+    - ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+
+  script:
+    - echo "Verifying Campus Connect production deployment..."
+
+    - |
+      ssh "$EC2_USER@$EC2_HOST" << 'EOF'
+        set -e
+
+        cd ~/campus-connect
+
+        echo "Container Status"
+
+        docker compose -f docker-compose.prod.yml ps
+
+        echo "Checking Frontend HTTP"
+
+        wget -q --spider http://localhost
+
+        echo "Frontend is reachable"
+
+        echo "Checking Backend Health"
+
+        docker exec spring_backend \
+          wget -q --spider http://localhost:8080/actuator/health
+
+        echo "Backend health check passed"
+
+        echo "Production verification successful"
+      EOF
+
+  only:
+    - main
+
+   
